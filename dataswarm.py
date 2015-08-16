@@ -22,7 +22,7 @@ def parse_doc(data):
         valid_json = json.loads(data)
         doc_id = valid_json["id"]
         mediaType = valid_json["metaData"]["mediaType"]
-    except Exception, e:
+    except Exception as e:
         print "Something went wrong" + str(e)
 
     if mediaType in social_mediatypes:
@@ -52,7 +52,7 @@ def post_doc(doc_id, doc_type, doc):
         g.r.bgsave()
 
         return '', 201
-    except Exception, e:
+    except Exception as e:
         print "Something went wrong" + str(e)
         return '', 400
 
@@ -67,7 +67,7 @@ def delete_doc(doc_id):
         # Remove from db set
         g.r.srem(doc_type, doc_id)
         return '', 204
-    except Exception, e:
+    except Exception as e:
         print "Something went wrong" + str(e)
         return '', 400
 
