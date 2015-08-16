@@ -23,7 +23,7 @@ def parse_doc(data):
         doc_id = valid_json["id"]
         mediaType = valid_json["metaData"]["mediaType"]
     except Exception as e:
-        print("Something went wrong" + str(e))
+        print("Something went wrong:", e)
 
     if mediaType in social_mediatypes:
         doc_type = "social"
@@ -53,7 +53,7 @@ def post_doc(doc_id, doc_type, doc):
 
         return '', 201
     except Exception as e:
-        print "Something went wrong" + str(e)
+        print("Something went wrong:", e)
         return '', 400
 
 
@@ -68,7 +68,7 @@ def delete_doc(doc_id):
         g.r.srem(doc_type, doc_id)
         return '', 204
     except Exception as e:
-        print "Something went wrong" + str(e)
+        print("Something went wrong:", e)
         return '', 400
 
 
@@ -77,7 +77,7 @@ def get_doc(doc_id):
     try:
         return g.r.get(doc_id), 200
     except Exception, e:
-        print "Something went wrong" + str(e)
+        print("Something went wrong:", e)
         return '', 404
 
 
