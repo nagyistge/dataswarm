@@ -1,12 +1,12 @@
 # Dataswarm
 
-Providing test-data as a service. Custom built for the Fairhair platform.
+Providing test-data as a service, with redis.
 
 ## Usage
 
 To start Dataswarm:
 
-1. Install depencencies: `sudo pip install redis misaka flask`
+1. Install depencencies: `sudo pip install requirements.txt`
 
 2. Start the web server by: `python dataswarm.py`
 

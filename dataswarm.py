@@ -12,8 +12,10 @@ app = Flask(__name__)
 service_name = "dataswarm"
 version = "0.0.2"
 pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
-social_mediatypes = ["mb","bl", "cm", "md", "sc", "vi", "wi", "ot", "rv", "cf"]
+social_mediatypes = ["mb", "bl", "cm", "md", "sc",
+                     "vi", "wi", "ot", "rv", "cf"]
 editorial_mediatypes = ["news"]
+
 
 def parse_doc(data):
     try:
@@ -32,9 +34,11 @@ def parse_doc(data):
 
     return doc_id, doc_type
 
+
 @app.before_request
 def before_request():
     g.r = redis.Redis(connection_pool=pool)
+
 
 def post_doc(doc_id, doc_type, doc):
     # POST to db
@@ -52,6 +56,7 @@ def post_doc(doc_id, doc_type, doc):
         print "Something went wrong" + str(e)
         return '', 400
 
+
 def delete_doc(doc_id):
     # DELETE from db
     try:
@@ -66,6 +71,7 @@ def delete_doc(doc_id):
         print "Something went wrong" + str(e)
         return '', 400
 
+
 def get_doc(doc_id):
     # GET doc if exists, or 404
     try:
@@ -73,6 +79,7 @@ def get_doc(doc_id):
     except Exception, e:
         print "Something went wrong" + str(e)
         return '', 404
+
 
 @app.route("/{0}/doc/<doc_id>".format(service_name), methods=['GET', 'DELETE'])
 def editorial_doc(doc_id):
@@ -83,17 +90,20 @@ def editorial_doc(doc_id):
     else:
         return get_doc(doc_id)
 
+
 @app.route("/{0}/doc/editorial/".format(service_name))
 def random_editorial():
     # From lists of editorial, choose one
     doc_id = random.choice(list(g.r.smembers("editorial")))
     return get_doc(doc_id)
 
+
 @app.route("/{0}/doc/social/".format(service_name))
 def random_social():
     # From lists of social, choose one
     doc_id = random.choice(list(g.r.smembers("social")))
     return get_doc(doc_id)
+
 
 @app.route("/{0}/doc/".format(service_name), methods=['GET', 'POST'])
 def post_or_random():
@@ -104,8 +114,10 @@ def post_or_random():
 
     else:
         # From lists of social and editorial doc_ids, choose one
-        doc_id = random.choice(list(g.r.smembers("social")) + list(g.r.smembers("editorial")))
+        doc_id = random.choice(
+            list(g.r.smembers("social")) + list(g.r.smembers("editorial")))
         return get_doc(doc_id)
+
 
 @app.route("/{0}/".format(service_name))
 def doc():
@@ -113,13 +125,17 @@ def doc():
         text = misaka.html(f.read())
     return text
 
+
 @app.route("/{0}/_status".format(service_name))
 def status():
     return '{{"version": "{0}","statusCode":"OK"}}'.format(version)
 
+
 @app.route("/{0}/_health".format(service_name))
 def health():
-    return '{{"db_size": "{0}","redis_version":"{1}"}}'.format(g.r.dbsize(), g.r.info()['redis_version'])
+    return '{{"db_size": "{0}",'
+    '"redis_version":"{1}"}}'.format(g.r.dbsize(), g.r.info()['redis_version'])
+
 
 @app.route('/')
 def redirect_to_doc():

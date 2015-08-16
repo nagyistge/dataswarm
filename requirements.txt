@@ -1,5 +1,4 @@
 misaka
 redis
-random
 json
 flask
