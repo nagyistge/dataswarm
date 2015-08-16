@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 service_name = "dataswarm"
 version = "0.0.2"
-pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
+pool = redis.ConnectionPool(host='0.0.0.0', port=6379, db=0)
 social_mediatypes = ["mb", "bl", "cm", "md", "sc",
                      "vi", "wi", "ot", "rv", "cf"]
 editorial_mediatypes = ["news"]
