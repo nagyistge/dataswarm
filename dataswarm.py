@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 service_name = "dataswarm"
 version = "0.0.2"
-pool = redis.ConnectionPool(host='rediser', port=6379, db=0)
+pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
 social_mediatypes = ["mb", "bl", "cm", "md", "sc",
                      "vi", "wi", "ot", "rv", "cf"]
 editorial_mediatypes = ["news"]
@@ -114,8 +114,14 @@ def post_or_random():
 
     else:
         # From lists of social and editorial doc_ids, choose one
-        doc_id = random.choice(
-            list(g.r.smembers("social")) + list(g.r.smembers("editorial")))
+        documents = list(g.r.smembers("social")) \
+            + list(g.r.smembers("editorial"))
+        try:
+            doc_id = random.choice(documents)
+        except Exception as e:
+            print("Something went wrong:", e)
+            return '', 404
+
         return get_doc(doc_id)
 
 
