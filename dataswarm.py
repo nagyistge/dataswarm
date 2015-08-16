@@ -23,7 +23,7 @@ def parse_doc(data):
         doc_id = valid_json["id"]
         mediaType = valid_json["metaData"]["mediaType"]
     except Exception as e:
-        print "Something went wrong" + str(e)
+        print("Something went wrong" + str(e))
 
     if mediaType in social_mediatypes:
         doc_type = "social"
