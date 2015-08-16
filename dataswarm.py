@@ -76,7 +76,7 @@ def get_doc(doc_id):
     # GET doc if exists, or 404
     try:
         return g.r.get(doc_id), 200
-    except Exception, e:
+    except Exception as e:
         print("Something went wrong:", e)
         return '', 404
 
