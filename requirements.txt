@@ -1,4 +1,3 @@
 misaka
 redis
-json
 flask
