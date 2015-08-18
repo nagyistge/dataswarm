@@ -5,25 +5,28 @@ import misaka
 import redis
 import random
 import json
+from os import listdir, getcwd
+from os.path import isfile, join
 from flask import Flask, request, g, redirect
-
 app = Flask(__name__)
 
 service_name = "dataswarm"
-version = "0.0.2"
-pool = redis.ConnectionPool(host='redis', port=6379, db=0)
+version = "0.0.3"
+pool = redis.ConnectionPool(host='localhost', port=6379, db=0)  # 'redis'
 social_mediatypes = ["mb", "bl", "cm", "md", "sc",
                      "vi", "wi", "ot", "rv", "cf"]
 editorial_mediatypes = ["news"]
 
 
 def parse_doc(data):
+    mediaType = None
+    doc_id = None
     try:
         valid_json = json.loads(data)
         doc_id = valid_json["id"]
         mediaType = valid_json["metaData"]["mediaType"]
     except Exception as e:
-        print("Something went wrong:", e)
+        app.logger.exception(e)
 
     if mediaType in social_mediatypes:
         doc_type = "social"
@@ -33,6 +36,35 @@ def parse_doc(data):
         doc_type = "unknown"
 
     return doc_id, doc_type
+
+
+def post_docs_in_path(path, doctype):
+        docs = [f for f in listdir(path) if isfile(join(path, f))]
+
+        print("Populating {0} docs".format(doctype))
+
+        for doc in docs:
+            doc_id, doc_type = parse_doc(doc)
+            something, code = post_doc(doc_id, doc_type, doc)
+            if code == 201:
+                print("Posted {0} doc with id {1}"
+                      .format(doctype, doc_id))
+            else:
+                app.logger.warning("Failed to post {0} doc with id {1}"
+                                   .format(doctype, doc_id))
+
+
+@app.before_first_request
+def ensure_data():
+    g.r = redis.Redis(connection_pool=pool)
+    # Populate with some initial data if db is empty
+    doctypes = ["social", "editorial"]
+
+    for doctype in doctypes:
+        print("Number of {0} docs in db: {1}".format(doctype,
+              len(list(g.r.smembers(doctype)))))
+        if len(list(g.r.smembers(doctype))) < 1:
+            post_docs_in_path(getcwd() + "/data/{0}".format(doctype), doctype)
 
 
 @app.before_request
@@ -53,7 +85,7 @@ def post_doc(doc_id, doc_type, doc):
 
         return '', 201
     except Exception as e:
-        print("Something went wrong:", e)
+        app.logger.exception(e)
         return '', 400
 
 
@@ -68,7 +100,7 @@ def delete_doc(doc_id):
         g.r.srem(doc_type, doc_id)
         return '', 204
     except Exception as e:
-        print("Something went wrong:", e)
+        app.logger.exception(e)
         return '', 400
 
 
@@ -77,7 +109,7 @@ def get_doc(doc_id):
     try:
         return g.r.get(doc_id), 200
     except Exception as e:
-        print("Something went wrong:", e)
+        app.logger.exception(e)
         return '', 404
 
 
@@ -91,17 +123,27 @@ def editorial_doc(doc_id):
         return get_doc(doc_id)
 
 
-@app.route("/{0}/doc/editorial/".format(service_name))
+def get_random(doctype):
+    documents = list(g.r.smembers(doctype))
+    # From lists of doctype, choose one
+    try:
+        doc_id = random.choice(documents)
+    except IndexError:
+        app.logger.exception("No {0} document in database".format(doctype))
+        return '', 404
+
+    return doc_id
+
+
+@app.route("/{0}/doc/editorial/".format(service_name), methods=['GET'])
 def random_editorial():
-    # From lists of editorial, choose one
-    doc_id = random.choice(list(g.r.smembers("editorial")))
+    doc_id = get_random("editorial")
     return get_doc(doc_id)
 
 
-@app.route("/{0}/doc/social/".format(service_name))
+@app.route("/{0}/doc/social/".format(service_name), methods=['GET'])
 def random_social():
-    # From lists of social, choose one
-    doc_id = random.choice(list(g.r.smembers("social")))
+    doc_id = get_random("social")
     return get_doc(doc_id)
 
 
@@ -118,34 +160,35 @@ def post_or_random():
             + list(g.r.smembers("editorial"))
         try:
             doc_id = random.choice(documents)
-        except Exception as e:
-            print("Something went wrong:", e)
+        except IndexError:
+            app.logger.exception("Database is empty")
             return '', 404
 
         return get_doc(doc_id)
 
 
-@app.route("/{0}/".format(service_name))
+@app.route("/{0}/".format(service_name), methods=['GET'])
 def doc():
     with open('README.md', 'r') as f:
         text = misaka.html(f.read())
     return text
 
 
-@app.route("/{0}/_status".format(service_name))
+@app.route("/{0}/_status".format(service_name), methods=['GET'])
 def status():
     return '{{"version": "{0}","statusCode":"OK"}}'.format(version)
 
 
-@app.route("/{0}/_health".format(service_name))
+@app.route("/{0}/_health".format(service_name), methods=['GET'])
 def health():
     return '{{"db_size": "{0}",'
     '"redis_version":"{1}"}}'.format(g.r.dbsize(), g.r.info()['redis_version'])
 
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def redirect_to_doc():
     return redirect("/{0}/".format(service_name), code=302)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
